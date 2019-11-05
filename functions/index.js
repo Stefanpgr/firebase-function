@@ -3,23 +3,23 @@
 const express = require("express");
 const cors = require("cors");
 const uuidv5 = require("uuid/v5");
+const uuid = require("uuid/v4"); // use to generate random namespace
 // Firebase init
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 admin.initializeApp();
-const MY_NAMESPACE = "ce056469-0b51-43c9-953f-ca3576a29455";
+const MY_NAMESPACE = uuid();
 // Express and CORS middleware init
 const app = express();
 app.use(cors());
 
 // POST / method
 app.post("/", (request, response) => {
-  request.body.id = new Date();
-
+  const entry = request.body;
   return admin
     .database()
     .ref("/entries")
-    .push(request.body)
+    .push(entry)
     .then(() => {
       return response.status(200).send(entry);
     })
@@ -52,19 +52,13 @@ exports.addUid = functions.database
     const entriesId = context.params.entriesId;
     // Grab the current value of what was written to the Realtime Database.
 
-    console.log("Uppercasing", entriesId);
+    console.log("entryID", entriesId);
 
     const original = snapshot.val();
     console.log(original);
-    const id = createUid();
-
-    // You must return a Promise when performing asynchronous tasks inside a Functions such as
-    // writing to the Firebase Realtime Database.
-    // Setting an "uppercase" sibling in the Realtime Database returns a Promise.
+    const id = uuidv5(entriesId, MY_NAMESPACE);
+    console.log(id, "id");
     return snapshot.ref.update({ uuid: id });
   });
 
-function createUid() {
-  return uuidv5("randStr", MY_NAMESPACE);
-}
 exports.entries = functions.https.onRequest(app);
